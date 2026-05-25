@@ -1,0 +1,21 @@
+{
+  "name": "com.thelegends.addressables.manager",
+  "displayName": "com.thelegends.addressables.manager",
+  "description": "com.thelegends.addressables.manager description goes here.",
+  "keywords": [],
+  "version": "0.0.0",
+  "unity": "2021.3",
+  "documentationUrl": "https://github.com/Unity-UPM-Packages/com.thelegends.addressables.manager#documentation",
+  "changelogUrl": "https://github.com/Unity-UPM-Packages/com.thelegends.addressables.manager/releases",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "repository": "https://github.com/Unity-UPM-Packages/com.thelegends.addressables.manager.git",
+    "url": "https://github.com/Unity-UPM-Packages/com.thelegends.addressables.manager.git"
+  },
+  "author": {
+    "name": "Unity-UPM-Packages",
+    "url": "https://github.com/Unity-UPM-Packages"
+  },
+  "dependencies": {}
+}
