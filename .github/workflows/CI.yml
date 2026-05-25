@@ -8,7 +8,7 @@ jobs:
     name: release
     runs-on: ubuntu-latest
     env:
-      PACKAGE_PATH: ProjectScope.ProjectName/Packages/projectscope.projectname
+      PACKAGE_PATH: com.thelegends.addressables.manager/Packages/com.thelegends.addressables.manager
     steps:
       - uses: actions/checkout@v4
         with:
