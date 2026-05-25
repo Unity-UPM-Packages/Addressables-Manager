@@ -125,6 +125,14 @@ namespace com.thelegends.addressables.manager.Demo.Editor
             }
 
             var group = settings.DefaultGroup;
+            
+            // Configure group to use Remote (CDN) Build & Load paths so it simulates download size
+            var schema = group.GetSchema<UnityEditor.AddressableAssets.Settings.GroupSchemas.BundledAssetGroupSchema>();
+            if (schema != null)
+            {
+                schema.BuildPath.SetVariableByName(settings, AddressableAssetSettings.kRemoteBuildPath);
+                schema.LoadPath.SetVariableByName(settings, AddressableAssetSettings.kRemoteLoadPath);
+            }
 
             foreach (var kvp in prefabs)
             {
@@ -268,7 +276,9 @@ namespace com.thelegends.addressables.manager.Demo.Editor
                 "7. Dispose Pool",
                 "8. Spawn Scoped Panel (Auto-clean)",
                 "9. Destroy Scoped Panel",
-                "10. Test Fallback (Invalid Key)"
+                "10. Test Fallback (Invalid Key)",
+                "11. Check CDN Download Size",
+                "12. Download CDN Assets"
             };
 
             Button[] buttons = new Button[buttonLabels.Length];
@@ -396,6 +406,8 @@ namespace com.thelegends.addressables.manager.Demo.Editor
             typeTester.GetField("_btnSpawnScoped", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).SetValue(tester, buttons[7]);
             typeTester.GetField("_btnDestroyScoped", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).SetValue(tester, buttons[8]);
             typeTester.GetField("_btnTestFallback", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).SetValue(tester, buttons[9]);
+            typeTester.GetField("_btnCheckCdnSize", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).SetValue(tester, buttons[10]);
+            typeTester.GetField("_btnDownloadCdn", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).SetValue(tester, buttons[11]);
 
             typeTester.GetField("_txtCacheStatus", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).SetValue(tester, txtCache);
             typeTester.GetField("_txtLogConsole", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).SetValue(tester, txtLog);

@@ -33,6 +33,8 @@ namespace com.thelegends.addressables.manager.Demo
         [SerializeField] private Button _btnSpawnScoped;
         [SerializeField] private Button _btnDestroyScoped;
         [SerializeField] private Button _btnTestFallback;
+        [SerializeField] private Button _btnCheckCdnSize;
+        [SerializeField] private Button _btnDownloadCdn;
 
         [Header("UI Display")]
         [SerializeField] private TextMeshProUGUI _txtCacheStatus;
@@ -99,6 +101,8 @@ namespace com.thelegends.addressables.manager.Demo
             _btnSpawnScoped.onClick.AddListener(() => SpawnScopedPanel().Forget());
             _btnDestroyScoped.onClick.AddListener(DestroyScopedPanel);
             _btnTestFallback.onClick.AddListener(() => LoadAsset(InvalidKey).Forget());
+            _btnCheckCdnSize.onClick.AddListener(() => CheckCdnDownloadSize().Forget());
+            _btnDownloadCdn.onClick.AddListener(() => DownloadCdnAssets().Forget());
         }
 
         // ==========================================
@@ -252,6 +256,46 @@ namespace com.thelegends.addressables.manager.Demo
             // Wait brief frame for destruction to propagate
             UniTask.DelayFrame(1).ContinueWith(UpdateCacheStatusDisplay).Forget();
             Log("[SUCCESS] Scoped Panel destroyed.");
+        }
+
+        private async UniTask CheckCdnDownloadSize()
+        {
+            try
+            {
+                Log("[ACTION] Checking CDN Download Size...");
+                string[] keys = { CubeKey, SphereKey, "DemoCapsule", "DemoCylinder" };
+                long size = await CdnDownloadManager.Instance.GetDownloadSizeAsync(keys, _cts.Token);
+                Log($"[SUCCESS] CDN Download Size for keys: {size} bytes ({size / 1024f:F2} KB)");
+            }
+            catch (Exception ex)
+            {
+                LogError($"[ERROR] Check size failed: {ex.Message}");
+            }
+        }
+
+        private async UniTask DownloadCdnAssets()
+        {
+            try
+            {
+                Log("[ACTION] Downloading CDN Assets...");
+                string[] keys = { CubeKey, SphereKey, "DemoCapsule", "DemoCylinder" };
+                
+                var progress = new Progress<DownloadProgressStatus>(status =>
+                {
+                    Log($"[PROGRESS] CDN Download: {status.Progress * 100f:F1}% ({status.DownloadedBytes / 1024f:F1}/{status.TotalBytes / 1024f:F1} KB)");
+                });
+
+                await CdnDownloadManager.Instance.DownloadDependenciesAsync(keys, progress, _cts.Token);
+                Log("[SUCCESS] CDN Download completed successfully!");
+            }
+            catch (OperationCanceledException)
+            {
+                LogWarning("[CANCEL] CDN Download was canceled.");
+            }
+            catch (Exception ex)
+            {
+                LogError($"[ERROR] CDN Download failed: {ex.Message}");
+            }
         }
 
         // ==========================================
