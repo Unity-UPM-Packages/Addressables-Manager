@@ -1,7 +1,7 @@
-# Unity Addressables Manager Package Documentation
+# Unity Addressables Manager Package
 `com.thelegends.addressables.manager`
 
-Welcome to the Addressables Manager Package Documentation. This document provides a mobile-optimized (Zero GC), memory-safe wrapper for Unity's Addressable Asset System. It features reference-counted caching, automatic lifetime-scoped tracking, CDN update & dependency pre-downloading with exponential backoff retries, and seamless integration with the `com.thelegends.unity.pooling` package.
+Welcome to the Addressables Manager Wiki. This package provides a mobile-optimized (Zero GC), memory-safe wrapper for Unity's Addressable Asset System. It features reference-counted caching, automatic lifetime-scoped tracking, CDN update & dependency pre-downloading with exponential backoff retries, and seamless integration with the `com.thelegends.unity.pooling` package.
 
 ---
 

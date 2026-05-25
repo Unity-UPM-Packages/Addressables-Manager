@@ -1,7 +1,14 @@
 {
     "name": "com.thelegends.addressables.manager",
     "rootNamespace": "com.thelegends.addressables.manager",
-    "references": [],
+    "references": [
+        "UniTask",
+        "UniTask.Addressables",
+        "Unity.Addressables",
+        "Unity.ResourceManager",
+        "com.thelegends.unity.patterns",
+        "com.thelegends.unity.pooling"
+    ],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
