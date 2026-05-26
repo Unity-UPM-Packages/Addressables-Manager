@@ -19,7 +19,7 @@ namespace com.thelegends.addressables.manager
         private readonly Dictionary<string, CachedAsset> _cache = new Dictionary<string, CachedAsset>();
         private readonly Dictionary<string, AssetReference> _fallbackCache = new Dictionary<string, AssetReference>();
         private readonly List<string> _tempKeysToRemove = new List<string>();
-        
+
         private AddressableConfig _config;
 
         /// <summary>
@@ -43,9 +43,9 @@ namespace com.thelegends.addressables.manager
         /// </summary>
         /// <param name="config">The Addressables configuration ScriptableObject.</param>
         /// <returns>A UniTask representing the asynchronous initialization operation.</returns>
-        public async UniTask InitializeAsync(AddressableConfig config)
+        public async UniTask InitializeAsync()
         {
-            _config = config;
+            _config = AddressableConfig.Instance;
             _fallbackCache.Clear();
 
             if (_config != null && _config.FallbackAssets != null)
@@ -295,7 +295,7 @@ namespace com.thelegends.addressables.manager
                 if (_config != null && _config.UseFallbackOnFailure && _fallbackCache.TryGetValue(normalizedKey, out AssetReference fallbackAsset))
                 {
                     Debug.LogWarning($"[AddressableService] Failed to load '{normalizedKey}' synchronously, falling back to alternative asset. Error: {ex.Message}");
-                    
+
                     string fallbackKey = NormalizeKey(fallbackAsset);
                     T fallbackAssetValue = LoadAssetSync<T>(fallbackAsset);
 
@@ -432,7 +432,7 @@ namespace com.thelegends.addressables.manager
                 if (_config != null && _config.UseFallbackOnFailure && _fallbackCache.TryGetValue(normalizedKey, out AssetReference fallbackAsset))
                 {
                     Debug.LogWarning($"[AddressableService] Failed to load '{normalizedKey}', falling back to alternative asset. Error: {ex.Message}");
-                    
+
                     string fallbackKey = NormalizeKey(fallbackAsset);
                     T fallbackAssetValue = await LoadAssetAsync<T>(fallbackAsset, cancellationToken, group);
 

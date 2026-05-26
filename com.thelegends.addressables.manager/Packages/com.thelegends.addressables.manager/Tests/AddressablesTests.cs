@@ -24,7 +24,7 @@ namespace com.thelegends.addressables.manager.Tests
     {
         private GameObject _testGo;
         private AddressableLifetimeScope _lifetimeScope;
-        private AddressableConfig _config;
+        private AddressableConfig _config => AddressableConfig.Instance;
         private GameObject _serviceGo;
         private GameObject _poolGo;
 
@@ -37,8 +37,6 @@ namespace com.thelegends.addressables.manager.Tests
             _testGo = new GameObject("TestObject");
             _lifetimeScope = _testGo.AddComponent<AddressableLifetimeScope>();
 
-            // Create a temporary ScriptableObject configuration
-            _config = ScriptableObject.CreateInstance<AddressableConfig>();
         }
 
         /// <summary>
@@ -52,9 +50,12 @@ namespace com.thelegends.addressables.manager.Tests
                 UnityEngine.Object.DestroyImmediate(_testGo);
             }
 
-            if (_config != null)
+            var instanceField = typeof(AddressableConfig).GetField("_instance", BindingFlags.Static | BindingFlags.NonPublic);
+            var currentInstance = (AddressableConfig)instanceField.GetValue(null);
+            if (currentInstance != null)
             {
-                UnityEngine.Object.DestroyImmediate(_config);
+                UnityEngine.Object.DestroyImmediate(currentInstance);
+                instanceField.SetValue(null, null);
             }
 
             // Cleanup Singletons safely
@@ -142,7 +143,7 @@ namespace com.thelegends.addressables.manager.Tests
             var assetField = fallbackMappingType.GetField("_fallbackAsset", BindingFlags.NonPublic | BindingFlags.Instance);
 
             var mapping = new FallbackMapping();
-            
+
             // Set fields on the struct
             object mappingBoxed = mapping;
             keyField.SetValue(mappingBoxed, mainKey);
@@ -177,7 +178,7 @@ namespace com.thelegends.addressables.manager.Tests
                 return default;
             };
 
-            await service.InitializeAsync(_config);
+            await service.InitializeAsync();
 
             // Act: Attempt to load the invalid key
             try
@@ -194,7 +195,7 @@ namespace com.thelegends.addressables.manager.Tests
             var cache = (IDictionary)cacheField.GetValue(service);
 
             Assert.IsTrue(cache.Contains(mainKey), "Cache should contain entry for the main key.");
-            
+
             var cachedAsset = cache[mainKey];
             var redirectedKeyProp = cachedAsset.GetType().GetProperty("RedirectedKey", BindingFlags.Public | BindingFlags.Instance);
             string redirectedKey = (string)redirectedKeyProp.GetValue(cachedAsset);
@@ -219,13 +220,13 @@ namespace com.thelegends.addressables.manager.Tests
             _serviceGo = new GameObject("AddressableService");
             var service = _serviceGo.AddComponent<AddressableService>();
             service.BypassAddressablesInitialization = true;
-            await service.InitializeAsync(_config);
+            await service.InitializeAsync();
 
             // Setup a fake CachedAsset in the service cache to simulate loaded asset
             string key = "mock_loaded_key";
             var cachedAssetType = typeof(AddressableService).GetNestedType("CachedAsset", BindingFlags.NonPublic);
             var cachedAssetInstance = Activator.CreateInstance(cachedAssetType);
-            
+
             cachedAssetType.GetProperty("Key").SetValue(cachedAssetInstance, key);
             cachedAssetType.GetProperty("RefCount").SetValue(cachedAssetInstance, 1);
 
@@ -263,11 +264,11 @@ namespace com.thelegends.addressables.manager.Tests
             _serviceGo = new GameObject("AddressableService");
             var service = _serviceGo.AddComponent<AddressableService>();
             service.BypassAddressablesInitialization = true;
-            await service.InitializeAsync(_config);
+            await service.InitializeAsync();
 
             _poolGo = new GameObject("PoolManager");
             var poolManager = _poolGo.AddComponent<PoolManager>();
-            
+
             // Setup a fake prefab in Service Cache
             string key = "mock_prefab_key";
             GameObject mockPrefab = new GameObject("MockPrefab");
@@ -374,7 +375,7 @@ namespace com.thelegends.addressables.manager.Tests
             _serviceGo = new GameObject("AddressableService");
             var service = _serviceGo.AddComponent<AddressableService>();
             service.BypassAddressablesInitialization = true;
-            await service.InitializeAsync(_config);
+            await service.InitializeAsync();
 
             string groupUi = "UI";
             string groupGameplay = "Gameplay";
@@ -384,7 +385,7 @@ namespace com.thelegends.addressables.manager.Tests
             string keyC = "gameplay_asset_c";
 
             var cachedAssetType = typeof(AddressableService).GetNestedType("CachedAsset", BindingFlags.NonPublic);
-            
+
             var assetA = Activator.CreateInstance(cachedAssetType);
             cachedAssetType.GetProperty("Key").SetValue(assetA, keyA);
             cachedAssetType.GetProperty("RefCount").SetValue(assetA, 1);
@@ -402,7 +403,7 @@ namespace com.thelegends.addressables.manager.Tests
 
             var cacheField = typeof(AddressableService).GetField("_cache", BindingFlags.NonPublic | BindingFlags.Instance);
             var cache = (IDictionary)cacheField.GetValue(service);
-            
+
             cache.Add(keyA, assetA);
             cache.Add(keyB, assetB);
             cache.Add(keyC, assetC);
@@ -433,7 +434,7 @@ namespace com.thelegends.addressables.manager.Tests
             service.BypassAddressablesInitialization = true;
 
             // Act: Initialize service
-            await service.InitializeAsync(_config);
+            await service.InitializeAsync();
 
             // Assert: Verify settings propagated correctly
             Assert.IsNotNull(service.Config, "Config reference in AddressableService should not be null.");
@@ -454,7 +455,7 @@ namespace com.thelegends.addressables.manager.Tests
             _serviceGo = new GameObject("AddressableService");
             var service = _serviceGo.AddComponent<AddressableService>();
             service.BypassAddressablesInitialization = true;
-            await service.InitializeAsync(_config);
+            await service.InitializeAsync();
 
             string key = "race_condition_test_key";
 
@@ -539,7 +540,7 @@ namespace com.thelegends.addressables.manager.Tests
                 return mockHandle;
             };
 
-            await service.InitializeAsync(_config);
+            await service.InitializeAsync();
 
             // Act: Start loading through the scope using the GameObject's cancellation token
             var token = scopeGo.GetCancellationTokenOnDestroy();

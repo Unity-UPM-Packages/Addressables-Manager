@@ -19,7 +19,6 @@ namespace com.thelegends.addressables.manager.Demo
     public sealed class AddressablesManualTester : MonoBehaviour
     {
         [Header("Configurations")]
-        [SerializeField] private AddressableConfig _config;
         [SerializeField] private AssetReference _fallbackAssetReference;
 
         [Header("UI Controls")]
@@ -76,7 +75,7 @@ namespace com.thelegends.addressables.manager.Demo
             Log("Initializing AddressableService...");
             if (AddressableService.Instance != null)
             {
-                await AddressableService.Instance.InitializeAsync(_config);
+                await AddressableService.Instance.InitializeAsync();
                 Log("AddressableService Initialized successfully!");
                 UpdateCacheStatusDisplay();
             }
