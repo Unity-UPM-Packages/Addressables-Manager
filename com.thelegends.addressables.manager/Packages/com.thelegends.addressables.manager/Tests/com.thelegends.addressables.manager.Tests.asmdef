@@ -9,7 +9,6 @@
         "Unity.Addressables",
         "Unity.ResourceManager",
         "com.thelegends.unity.patterns",
-        "com.thelegends.unity.pooling",
         "com.thelegends.addressables.manager"
     ],
     "includePlatforms": [

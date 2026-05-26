@@ -20,6 +20,7 @@ namespace com.thelegends.addressables.manager.Demo
     {
         [Header("Configurations")]
         [SerializeField] private AssetReference _fallbackAssetReference;
+        [SerializeField] private Transform _poolParent;
 
         [Header("UI Controls")]
         [SerializeField] private Button _btnLoadCube;
@@ -43,6 +44,7 @@ namespace com.thelegends.addressables.manager.Demo
         private readonly List<GameObject> _spawnedPoolCubes = new List<GameObject>();
         private GameObject _scopedPanelInstance;
         private CancellationTokenSource _cts;
+        private bool _didCreatePoolParent;
 
         private const string CubeKey = "DemoCube";
         private const string SphereKey = "DemoSphere";
@@ -51,6 +53,12 @@ namespace com.thelegends.addressables.manager.Demo
         private void Start()
         {
             _cts = new CancellationTokenSource();
+            if (_poolParent == null)
+            {
+                var go = new GameObject("[Pool] Cubes");
+                _poolParent = go.transform;
+                _didCreatePoolParent = true;
+            }
             InitializeButtons();
             InitializeAddressableService().Forget();
         }
@@ -60,7 +68,12 @@ namespace com.thelegends.addressables.manager.Demo
             _cts?.Cancel();
             _cts?.Dispose();
             _cubePoolHelper?.Dispose();
-            
+
+            if (_didCreatePoolParent && _poolParent != null)
+            {
+                Destroy(_poolParent.gameObject);
+            }
+
             foreach (var cube in _spawnedPoolCubes)
             {
                 if (cube != null)
@@ -89,7 +102,7 @@ namespace com.thelegends.addressables.manager.Demo
         {
             _btnLoadCube.onClick.AddListener(() => LoadAsset(CubeKey).Forget());
             _btnReleaseCube.onClick.AddListener(() => ReleaseAsset(CubeKey));
-            
+
             _btnLoadSphere.onClick.AddListener(() => LoadAsset(SphereKey).Forget());
             _btnReleaseSphere.onClick.AddListener(() => ReleaseAsset(SphereKey));
 
@@ -146,7 +159,15 @@ namespace com.thelegends.addressables.manager.Demo
                 {
                     Log("[ACTION] Initializing PooledPrefabHelper for Cube...");
                     _cubePoolHelper = new PooledPrefabHelper();
-                    await _cubePoolHelper.InitializeAsync(CubeKey, _cts.Token);
+
+                    if (_poolParent == null)
+                    {
+                        var go = new GameObject("[Pool] Cubes");
+                        _poolParent = go.transform;
+                        _didCreatePoolParent = true;
+                    }
+
+                    await _cubePoolHelper.InitializeAsync(CubeKey, _cts.Token, parentTransform: _poolParent);
                     Log("[SUCCESS] Pool initialized!");
                 }
 
@@ -194,6 +215,14 @@ namespace com.thelegends.addressables.manager.Demo
                 _cubePoolHelper.Dispose();
                 _cubePoolHelper = null;
                 _spawnedPoolCubes.Clear();
+
+                if (_didCreatePoolParent && _poolParent != null)
+                {
+                    Destroy(_poolParent.gameObject);
+                    _poolParent = null;
+                    _didCreatePoolParent = false;
+                }
+
                 Log("[SUCCESS] Pool disposed & clean-up completed.");
             }
             UpdateCacheStatusDisplay();
@@ -251,7 +280,7 @@ namespace com.thelegends.addressables.manager.Demo
             Log("[ACTION] Destroying Scoped Panel GameObject. This should trigger automatic release of DemoSphere...");
             Destroy(_scopedPanelInstance);
             _scopedPanelInstance = null;
-            
+
             // Wait brief frame for destruction to propagate
             UniTask.DelayFrame(1).ContinueWith(UpdateCacheStatusDisplay).Forget();
             Log("[SUCCESS] Scoped Panel destroyed.");
@@ -278,7 +307,7 @@ namespace com.thelegends.addressables.manager.Demo
             {
                 Log("[ACTION] Downloading CDN Assets...");
                 string[] keys = { CubeKey, SphereKey, "DemoCapsule", "DemoCylinder" };
-                
+
                 var progress = new Progress<DownloadProgressStatus>(status =>
                 {
                     Log($"[PROGRESS] CDN Download: {status.Progress * 100f:F1}% ({status.DownloadedBytes / 1024f:F1}/{status.TotalBytes / 1024f:F1} KB)");
@@ -367,7 +396,7 @@ namespace com.thelegends.addressables.manager.Demo
         {
             string time = DateTime.Now.ToString("HH:mm:ss");
             _txtLogConsole.text = $"[{time}] {coloredMessage}\n" + _txtLogConsole.text;
-            
+
             // Limit log lines to prevent UI overflow
             if (_txtLogConsole.text.Length > 2000)
             {

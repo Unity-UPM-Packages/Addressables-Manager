@@ -1,7 +1,7 @@
 # Unity Addressables Manager Package
 `com.thelegends.addressables.manager`
 
-Welcome to the Addressables Manager Wiki. This package provides a mobile-optimized (Zero GC), memory-safe wrapper for Unity's Addressable Asset System. It features reference-counted caching, automatic lifetime-scoped tracking, CDN update & dependency pre-downloading with exponential backoff retries, and seamless integration with the `com.thelegends.unity.pooling` package.
+Welcome to the Addressables Manager Wiki. This package provides a mobile-optimized (Zero GC), memory-safe wrapper for Unity's Addressable Asset System. It features reference-counted caching, automatic lifetime-scoped tracking, CDN update & dependency pre-downloading with exponential backoff retries, and seamless integration with the `com.thelegends.unity.patterns` package.
 
 ---
 
@@ -24,7 +24,7 @@ Welcome to the Addressables Manager Wiki. This package provides a mobile-optimiz
 *   **Zero GC Allocation**: Built entirely on [UniTask](https://github.com/Cysharp/UniTask), avoiding the memory overhead and Garbage Collection spikes associated with traditional Coroutines and C# Tasks on mobile devices.
 *   **Reference Counting Cache**: Dynamically manages asset reference counts (`RefCount`). Duplicate concurrent requests share the same loading operation, and assets are only released from memory once their `RefCount` drops to 0.
 *   **Safe Cancellation (Zero Double-Releases)**: Decouples cancellation logic from service cleanups. The service propagates cancellation tokens without decrementing the cache unless the caller instructs it. Scope components verify ownership of keys before executing release operations, preventing double-release exceptions.
-*   **Decoupled Pooling Integration**: Relies on `com.thelegends.unity.pooling.PoolManager` to handle object pooling, while supplying an adapter bridge (`PooledPrefabHelper`) to fetch prefabs asynchronously and pre-configure pools seamlessly.
+*   **Decoupled Pooling Integration**: Relies on `com.thelegends.unity.patterns` (`ComponentPool<T>`) to handle object pooling, while supplying an adapter bridge (`PooledPrefabHelper`) to fetch prefabs asynchronously and manage local pools seamlessly.
 
 ---
 
@@ -38,7 +38,7 @@ graph TD
     
     LifetimeScope -->|Registers / OnDestroy Releases| AddrService
     PoolHelper -->|Tails Prefabs| AddrService
-    PoolHelper -->|Registers & Fetches Pools| PoolManager[com.thelegends.unity.pooling.PoolManager]
+    PoolHelper -->|Manages Local Pool| ComponentPool[TheLegends.Base.Pool.ComponentPool]
     
     AddrService -->|Manages RefCounting Cache| Cache[Ref-Counting Cache]
     AddrService -->|Check & Download Updates| CdnManager[CdnDownloadManager]
@@ -69,10 +69,8 @@ Open your Unity project's `Packages/manifest.json` file and register the registr
     }
   ],
   "dependencies": {
-    "com.thelegends.addressables.manager": "1.0.0",
     "com.cysharp.unitask": "2.5.11",
-    "com.thelegends.unity.pooling": "1.0.1",
-    "com.thelegends.unity.patterns": "1.0.3",
+    "com.thelegends.unity.patterns": "1.0.4",
     "com.unity.addressables": "1.28.2"
   }
 }
@@ -84,8 +82,6 @@ Ensure your custom assembly definition files reference the following libraries:
 - `UniTask.Addressables`
 - `Unity.Addressables`
 - `Unity.ResourceManager`
-- `com.thelegends.addressables.manager`
-- `com.thelegends.unity.pooling`
 - `com.thelegends.unity.patterns`
 
 ---
@@ -227,7 +223,7 @@ private async UniTask UpdateResources()
 ---
 
 ### 4. PooledPrefabHelper
-An `IDisposable` adapter class bridging `AddressableService` and `PoolManager`. It loads prefabs via Addressables and registers them into the pool manager.
+An `IDisposable` adapter class bridging `AddressableService` and `ComponentPool<Transform>`. It loads prefabs via Addressables and manages the object pool locally.
 
 ```csharp
 public sealed class SpawnManager : MonoBehaviour
@@ -241,7 +237,7 @@ public sealed class SpawnManager : MonoBehaviour
     {
         _enemyPoolHelper = new PooledPrefabHelper();
 
-        // 1. Initialize helper (Loads prefab from Addressables & pre-registers the pool in PoolManager)
+        // 1. Initialize helper (Loads prefab from Addressables & creates the ComponentPool)
         await _enemyPoolHelper.InitializeAsync(
             _enemyAddressableKey, 
             this.GetCancellationTokenOnDestroy()
@@ -269,13 +265,14 @@ public sealed class SpawnManager : MonoBehaviour
 }
 ```
 
-#### UI Pools Propagation:
-To initialize the helper for UI pooling, pass UI config properties:
+#### UI Pools:
+To initialize the helper for UI pooling, pass UI config properties like `isUiPool` and `parentTransform` to `InitializeAsync`:
 ```csharp
-await uiPoolHelper.InitializeUiAsync(
+await uiPoolHelper.InitializeAsync(
     "ui/button_prefab", 
-    canvasParentTransform, 
-    this.GetCancellationTokenOnDestroy()
+    this.GetCancellationTokenOnDestroy(),
+    isUiPool: true,
+    parentTransform: canvasParentTransform
 );
 ```
 
