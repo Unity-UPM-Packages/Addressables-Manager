@@ -113,13 +113,10 @@ The core singleton coordinator that handles cache management, ref-counting, fall
 
 #### Initialization
 Initialize the service at your game splash screen or loading sequence:
-```csharp
-[SerializeField] private AddressableConfig _config;
-
 private async UniTask Start()
 {
     // Explicit initialization downloads catalogs and pre-warms configuration settings.
-    await AddressableService.Instance.InitializeAsync(_config);
+    await AddressableService.Instance.InitializeAsync();
 }
 ```
 

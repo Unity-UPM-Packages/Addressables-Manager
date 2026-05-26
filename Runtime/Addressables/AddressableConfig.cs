@@ -10,9 +10,27 @@ namespace com.thelegends.addressables.manager
     /// <summary>
     /// Configuration settings for the Addressables manager system, containing CDN download retries, delays, and fallback asset mappings.
     /// </summary>
-    [CreateAssetMenu(fileName = "AddressableConfig", menuName = "The Legends/Addressables/AddressableConfig")]
+    [CreateAssetMenu(fileName = "AddressableSettings", menuName = "DataAsset/AddressableSettings")]
     public sealed class AddressableConfig : ScriptableObject
     {
+        public const string ResDir = "Assets/TripSoft/Addressables/Resources";
+        public const string FileName = "AddressableSettings";
+        public const string FileExtension = ".asset";
+
+        private static AddressableConfig _instance;
+        public static AddressableConfig Instance
+        {
+            get
+            {
+                if (_instance != null)
+                {
+                    return _instance;
+                }
+
+                _instance = Resources.Load<AddressableConfig>(FileName);
+                return _instance;
+            }
+        }
         [Header("Retry Settings")]
         [SerializeField]
         [Tooltip("Number of retries for CDN download or asset loading when network errors occur.")]

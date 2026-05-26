@@ -1,17 +1,22 @@
 {
   "name": "com.thelegends.addressables.manager",
-  "displayName": "com.thelegends.addressables.manager",
-  "description": "com.thelegends.addressables.manager description goes here.",
-  "keywords": [],
+  "displayName": "Addressables Manager",
+  "description": "A robust, feature-rich package for managing Unity Addressables assets with focus on performance, ease of use, and enterprise-grade features.",
+  "keywords": [
+    "Addressables",
+    "Asset Management",
+    "Dependency Injection",
+    "Scene Loading"
+  ],
   "version": "0.0.0",
   "unity": "2021.3",
-  "documentationUrl": "https://github.com/Unity-UPM-Packages/com.thelegends.addressables.manager#documentation",
-  "changelogUrl": "https://github.com/Unity-UPM-Packages/com.thelegends.addressables.manager/releases",
+  "documentationUrl": "https://github.com/Unity-UPM-Packages/Addressables-Manager#documentation",
+  "changelogUrl": "https://github.com/Unity-UPM-Packages/Addressables-Manager/releases",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "repository": "https://github.com/Unity-UPM-Packages/com.thelegends.addressables.manager.git",
-    "url": "https://github.com/Unity-UPM-Packages/com.thelegends.addressables.manager.git"
+    "repository": "https://github.com/Unity-UPM-Packages/Addressables-Manager.git",
+    "url": "https://github.com/Unity-UPM-Packages/Addressables-Manager.git"
   },
   "author": {
     "name": "Unity-UPM-Packages",
