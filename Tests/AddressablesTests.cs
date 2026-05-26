@@ -11,7 +11,7 @@ using UnityEngine.AddressableAssets;
 using UnityEngine.TestTools;
 using Cysharp.Threading.Tasks;
 using UnityEngine.ResourceManagement.AsyncOperations;
-using com.thelegends.unity.pooling;
+using TheLegends.Base.Pool;
 
 namespace com.thelegends.addressables.manager.Tests
 {
@@ -26,7 +26,6 @@ namespace com.thelegends.addressables.manager.Tests
         private AddressableLifetimeScope _lifetimeScope;
         private AddressableConfig _config => AddressableConfig.Instance;
         private GameObject _serviceGo;
-        private GameObject _poolGo;
 
         /// <summary>
         /// Sets up the test environment prior to executing each test.
@@ -58,43 +57,9 @@ namespace com.thelegends.addressables.manager.Tests
                 instanceField.SetValue(null, null);
             }
 
-            // Cleanup Singletons safely
-            if (AddressableService.Instance != null)
-            {
-                var go = AddressableService.Instance.gameObject;
-                AddressableService.DestroyInstance();
-                if (go != null)
-                {
-                    UnityEngine.Object.DestroyImmediate(go);
-                }
-            }
-            else
-            {
-                AddressableService.DestroyInstance();
-            }
-
-            if (PoolManager.Instance != null)
-            {
-                var go = PoolManager.Instance.gameObject;
-                PoolManager.DestroyInstance();
-                if (go != null)
-                {
-                    UnityEngine.Object.DestroyImmediate(go);
-                }
-            }
-            else
-            {
-                PoolManager.DestroyInstance();
-            }
-
             if (_serviceGo != null)
             {
                 UnityEngine.Object.DestroyImmediate(_serviceGo);
-            }
-
-            if (_poolGo != null)
-            {
-                UnityEngine.Object.DestroyImmediate(_poolGo);
             }
         }
 
@@ -252,7 +217,7 @@ namespace com.thelegends.addressables.manager.Tests
         });
 
         /// <summary>
-        /// Tests the integration between PooledPrefabHelper and PoolManager, verifying instances are correctly fetched and returned.
+        /// Tests the integration between PooledPrefabHelper and ComponentPool, verifying instances are correctly fetched and returned.
         /// </summary>
         /// <returns>A UnityTest IEnumerator representation.</returns>
         [UnityTest]
@@ -260,42 +225,25 @@ namespace com.thelegends.addressables.manager.Tests
         {
             UnityEngine.TestTools.LogAssert.ignoreFailingMessages = true;
 
-            // Arrange: Setup Service and PoolManager
+            // Arrange: Setup Service
             _serviceGo = new GameObject("AddressableService");
             var service = _serviceGo.AddComponent<AddressableService>();
             service.BypassAddressablesInitialization = true;
             await service.InitializeAsync();
 
-            _poolGo = new GameObject("PoolManager");
-            var poolManager = _poolGo.AddComponent<PoolManager>();
-
             // Setup a fake prefab in Service Cache
             string key = "mock_prefab_key";
             GameObject mockPrefab = new GameObject("MockPrefab");
 
-            var cachedAssetType = typeof(AddressableService).GetNestedType("CachedAsset", BindingFlags.NonPublic);
-            var cachedAssetInstance = Activator.CreateInstance(cachedAssetType);
-            cachedAssetType.GetProperty("Key").SetValue(cachedAssetInstance, key);
-            cachedAssetType.GetProperty("RefCount").SetValue(cachedAssetInstance, 0); // Initialize refcount
-
-            // Simulate Addressables.LoadAssetAsync result by writing directly to Cache with a fake successfully loaded asset
-            var cacheField = typeof(AddressableService).GetField("_cache", BindingFlags.NonPublic | BindingFlags.Instance);
-            var cache = (IDictionary)cacheField.GetValue(service);
+            service.LoadAssetOperationFunc = (k, type) =>
+            {
+                return Addressables.ResourceManager.CreateCompletedOperation<GameObject>(mockPrefab, null);
+            };
 
             using (var helper = new PooledPrefabHelper())
             {
-                // Inject fields via reflection to simulate successful InitializeAsync
-                var prefabField = typeof(PooledPrefabHelper).GetField("_prefab", BindingFlags.NonPublic | BindingFlags.Instance);
-                var keyField = typeof(PooledPrefabHelper).GetField("_addressableKey", BindingFlags.NonPublic | BindingFlags.Instance);
-                var initField = typeof(PooledPrefabHelper).GetField("_isInitialized", BindingFlags.NonPublic | BindingFlags.Instance);
-
-                prefabField.SetValue(helper, mockPrefab);
-                keyField.SetValue(helper, key);
-                initField.SetValue(helper, true);
-
-                // Create pool manually with 0 initial size to ensure the first instance name has index 0
-                var poolConfig = new PoolConfig(0, true, 10, PoolRecyclingStrategy.ExceedMaxSizeTemporarily);
-                await PoolManager.Instance.CreatePoolAsync<GameObject>(mockPrefab, poolConfig);
+                // Act: Initialize helper which sets up the pool automatically
+                await helper.InitializeAsync(key, CancellationToken.None);
 
                 // Act: Get an instance
                 GameObject instance = await helper.GetInstanceAsync();
@@ -303,61 +251,13 @@ namespace com.thelegends.addressables.manager.Tests
                 // Assert: Verify instance is created and active
                 Assert.IsNotNull(instance, "Pooled instance should not be null.");
                 Assert.IsTrue(instance.activeSelf, "Pooled instance should be active.");
-                Assert.AreEqual($"{mockPrefab.name} (Pooled 0)", instance.name, "Name should match pool naming convention.");
+                Assert.IsTrue(instance.name.StartsWith(mockPrefab.name), "Name should match prefab name.");
 
                 // Act: Return instance
                 helper.ReturnInstance(instance);
 
                 // Assert: Verify instance is deactivated (returned to pool)
                 Assert.IsFalse(instance.activeInHierarchy, "Pooled instance should be deactivated after returning to pool.");
-
-                // Clean up pooled objects manually in EditMode before helper.Dispose() runs
-                // to avoid Object.Destroy() console errors
-                if (PoolManager.Instance != null && PoolManager.Instance.Pools.TryGetValue(mockPrefab, out var poolObj))
-                {
-                    var inactiveField = poolObj.GetType().GetField("_inactiveObjects", BindingFlags.NonPublic | BindingFlags.Instance);
-                    var activeField = poolObj.GetType().GetField("_activeObjects", BindingFlags.NonPublic | BindingFlags.Instance);
-                    var parentField = poolObj.GetType().GetField("_parentContainer", BindingFlags.NonPublic | BindingFlags.Instance);
-
-                    if (inactiveField != null)
-                    {
-                        var inactiveStack = (Stack<GameObject>)inactiveField.GetValue(poolObj);
-                        if (inactiveStack != null)
-                        {
-                            foreach (var obj in inactiveStack)
-                            {
-                                if (obj != null)
-                                {
-                                    UnityEngine.Object.DestroyImmediate(obj);
-                                }
-                            }
-                        }
-                    }
-
-                    if (activeField != null)
-                    {
-                        var activeList = (List<GameObject>)activeField.GetValue(poolObj);
-                        if (activeList != null)
-                        {
-                            foreach (var obj in activeList)
-                            {
-                                if (obj != null)
-                                {
-                                    UnityEngine.Object.DestroyImmediate(obj);
-                                }
-                            }
-                        }
-                    }
-
-                    if (parentField != null)
-                    {
-                        var parentContainer = (GameObject)parentField.GetValue(poolObj);
-                        if (parentContainer != null)
-                        {
-                            UnityEngine.Object.DestroyImmediate(parentContainer);
-                        }
-                    }
-                }
             }
 
             // Clean up prefab

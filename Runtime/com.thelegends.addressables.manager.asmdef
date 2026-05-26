@@ -6,8 +6,7 @@
         "UniTask.Addressables",
         "Unity.Addressables",
         "Unity.ResourceManager",
-        "com.thelegends.unity.patterns",
-        "com.thelegends.unity.pooling"
+        "com.thelegends.unity.patterns"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

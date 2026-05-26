@@ -5,7 +5,7 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
-using com.thelegends.unity.pooling;
+using TheLegends.Base.Pool;
 
 namespace com.thelegends.addressables.manager
 {
@@ -19,6 +19,7 @@ namespace com.thelegends.addressables.manager
         private string _addressableKey;
         private bool _isInitialized;
         private bool _isUiPool;
+        private ComponentPool<Transform> _pool;
 
         /// <summary>
         /// Gets a value indicating whether this helper has been initialized.
@@ -45,7 +46,9 @@ namespace com.thelegends.addressables.manager
         /// </summary>
         /// <param name="key">The addressable key identifying the prefab.</param>
         /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
-        /// <param name="poolConfig">Optional custom pool configuration.</param>
+        /// <param name="collectionCheck">Collection checks will throw errors if you try to release an item already in the pool.</param>
+        /// <param name="defaultCapacity">The default capacity the pool will be created with.</param>
+        /// <param name="maxSize">The maximum size of the pool.</param>
         /// <param name="group">Optional group identifier for Addressables tracking.</param>
         /// <param name="isUiPool">Whether the pool should be registered as a UI pool.</param>
         /// <param name="parentTransform">The parent RectTransform if registering a UI pool.</param>
@@ -53,10 +56,12 @@ namespace com.thelegends.addressables.manager
         public async UniTask InitializeAsync(
             string key,
             CancellationToken cancellationToken,
-            PoolConfig? poolConfig = null,
+            bool collectionCheck = true,
+            int defaultCapacity = 10,
+            int maxSize = 10000,
             string group = null,
             bool isUiPool = false,
-            RectTransform parentTransform = null)
+            Transform parentTransform = null)
         {
             if (_isInitialized)
             {
@@ -85,30 +90,15 @@ namespace com.thelegends.addressables.manager
                     throw new InvalidOperationException($"Failed to load prefab with key: {key}");
                 }
 
-                if (PoolManager.Instance == null)
+                if (_isUiPool && parentTransform == null)
                 {
-                    throw new InvalidOperationException("PoolManager is not initialized.");
+                    throw new ArgumentNullException(nameof(parentTransform), "parentTransform cannot be null for UI pools.");
                 }
 
-                if (_isUiPool)
-                {
-                    if (parentTransform == null)
-                    {
-                        throw new ArgumentNullException(nameof(parentTransform), "parentTransform cannot be null for UI pools.");
-                    }
-                    await PoolManager.Instance.CreateUIPoolAsync<GameObject>(_prefab, parentTransform, poolConfig).AsUniTask().AttachExternalCancellation(cancellationToken);
-                }
-                else
-                {
-                    await PoolManager.Instance.CreatePoolAsync<GameObject>(_prefab, poolConfig).AsUniTask().AttachExternalCancellation(cancellationToken);
-                }
+                _pool = new ComponentPool<Transform>(_prefab.transform, parentTransform, collectionCheck, defaultCapacity, maxSize);
             }
             catch (OperationCanceledException)
             {
-                // If LoadAssetAsync or CreatePoolAsync is canceled:
-                // 1. If prefab was loaded successfully, we must release it.
-                // 2. If prefab loading was canceled, AddressableService already decremented RefCount.
-                // In either case, we reset our local fields to avoid double-release during subsequent Dispose().
                 if (_prefab != null && AddressableService.Instance != null)
                 {
                     AddressableService.Instance.ReleaseAsset(_addressableKey);
@@ -119,9 +109,6 @@ namespace com.thelegends.addressables.manager
             }
             catch (Exception)
             {
-                // For other exceptions:
-                // 1. If prefab was loaded successfully, we must release it.
-                // 2. If LoadAssetAsync failed, AddressableService already decremented RefCount.
                 if (_prefab != null && AddressableService.Instance != null)
                 {
                     AddressableService.Instance.ReleaseAsset(_addressableKey);
@@ -139,7 +126,9 @@ namespace com.thelegends.addressables.manager
         /// </summary>
         /// <param name="assetReference">The AssetReference of the prefab.</param>
         /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
-        /// <param name="poolConfig">Optional custom pool configuration.</param>
+        /// <param name="collectionCheck">Collection checks will throw errors if you try to release an item already in the pool.</param>
+        /// <param name="defaultCapacity">The default capacity the pool will be created with.</param>
+        /// <param name="maxSize">The maximum size of the pool.</param>
         /// <param name="group">Optional group identifier for Addressables tracking.</param>
         /// <param name="isUiPool">Whether the pool should be registered as a UI pool.</param>
         /// <param name="parentTransform">The parent RectTransform if registering a UI pool.</param>
@@ -147,10 +136,12 @@ namespace com.thelegends.addressables.manager
         public async UniTask InitializeAsync(
             AssetReference assetReference,
             CancellationToken cancellationToken,
-            PoolConfig? poolConfig = null,
+            bool collectionCheck = true,
+            int defaultCapacity = 10,
+            int maxSize = 10000,
             string group = null,
             bool isUiPool = false,
-            RectTransform parentTransform = null)
+            Transform parentTransform = null)
         {
             if (assetReference == null)
             {
@@ -159,7 +150,7 @@ namespace com.thelegends.addressables.manager
 
             object runtimeKey = assetReference.RuntimeKey;
             string key = runtimeKey is string stringKey ? stringKey : runtimeKey?.ToString();
-            await InitializeAsync(key, cancellationToken, poolConfig, group, isUiPool, parentTransform);
+            await InitializeAsync(key, cancellationToken, collectionCheck, defaultCapacity, maxSize, group, isUiPool, parentTransform);
         }
 
         /// <summary>
@@ -167,12 +158,31 @@ namespace com.thelegends.addressables.manager
         /// </summary>
         /// <param name="cancellationToken">The cancellation token to cancel the retrieval operation.</param>
         /// <returns>A UniTask returning the pooled GameObject instance.</returns>
-        public async UniTask<GameObject> GetInstanceAsync(CancellationToken cancellationToken = default)
+        public UniTask<GameObject> GetInstanceAsync(CancellationToken cancellationToken = default)
         {
             EnsureInitialized();
 
-            GameObject instance = await PoolManager.Instance.GetAsync<GameObject>(_prefab).AsUniTask().AttachExternalCancellation(cancellationToken);
-            return instance;
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return UniTask.FromCanceled<GameObject>(cancellationToken);
+            }
+
+            Transform instanceTransform = _pool.Get();
+            if (instanceTransform == null)
+            {
+                return UniTask.FromResult<GameObject>(null);
+            }
+
+            GameObject instance = instanceTransform.gameObject;
+
+            // Manually call OnSpawn on IPoolable components since Transform doesn't implement IPoolable directly
+            var poolables = instance.GetComponentsInChildren<IPoolable>(true);
+            for (int i = 0; i < poolables.Length; i++)
+            {
+                poolables[i]?.OnSpawn();
+            }
+
+            return UniTask.FromResult(instance);
         }
 
         /// <summary>
@@ -195,7 +205,6 @@ namespace com.thelegends.addressables.manager
                 return component;
             }
 
-            // Return instance immediately to avoid memory leaks if component is missing
             ReturnInstance(instance);
             throw new MissingComponentException($"Component of type {typeof(TComponent).Name} is missing on the pooled prefab.");
         }
@@ -208,7 +217,21 @@ namespace com.thelegends.addressables.manager
         {
             EnsureInitialized();
 
-            return PoolManager.Instance.Get<GameObject>(_prefab);
+            Transform instanceTransform = _pool.Get();
+            if (instanceTransform == null)
+            {
+                return null;
+            }
+
+            GameObject instance = instanceTransform.gameObject;
+
+            var poolables = instance.GetComponentsInChildren<IPoolable>(true);
+            for (int i = 0; i < poolables.Length; i++)
+            {
+                poolables[i]?.OnSpawn();
+            }
+
+            return instance;
         }
 
         /// <summary>
@@ -230,7 +253,6 @@ namespace com.thelegends.addressables.manager
                 return component;
             }
 
-            // Return instance immediately to avoid memory leaks if component is missing
             ReturnInstance(instance);
             throw new MissingComponentException($"Component of type {typeof(TComponent).Name} is missing on the pooled prefab.");
         }
@@ -246,20 +268,27 @@ namespace com.thelegends.addressables.manager
                 return;
             }
 
-            if (PoolManager.Instance != null)
+            if (_pool != null)
             {
-                PoolManager.Instance.ReturnToPool(instance);
+                var poolables = instance.GetComponentsInChildren<IPoolable>(true);
+                for (int i = 0; i < poolables.Length; i++)
+                {
+                    poolables[i]?.OnDespawn();
+                }
+
+                _pool.Release(instance.transform);
             }
         }
 
         /// <summary>
-        /// Disposes of the helper, clearing the pool from PoolManager and releasing the prefab in AddressableService.
+        /// Clear of the helper, clearing the pool and releasing the prefab in AddressableService.
         /// </summary>
         public void Dispose()
         {
-            if (PoolManager.Instance != null && _prefab != null)
+            if (_pool != null)
             {
-                PoolManager.Instance.ClearPool<GameObject>(_prefab, isUIPool: _isUiPool);
+                _pool.Clear();
+                _pool = null;
             }
 
             if (AddressableService.Instance != null && !string.IsNullOrEmpty(_addressableKey))
