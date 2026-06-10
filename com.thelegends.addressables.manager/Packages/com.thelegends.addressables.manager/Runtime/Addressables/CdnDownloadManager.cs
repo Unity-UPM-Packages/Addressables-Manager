@@ -8,10 +8,12 @@ using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.AddressableAssets.ResourceLocators;
 using UnityEngine.ResourceManagement.AsyncOperations;
+using UnityEngine.Scripting.APIUpdating;
 using TheLegends.Base.UnitySingleton;
-
-namespace com.thelegends.addressables.manager
+namespace TheLegends.Base.Addressables
 {
+    using Addressables = UnityEngine.AddressableAssets.Addressables;
+
     /// <summary>
     /// Progress status data containing the progress percentage and download sizes.
     /// </summary>
@@ -150,7 +152,7 @@ namespace com.thelegends.addressables.manager
                     {
                         cancellationToken.ThrowIfCancellationRequested();
                         DownloadStatus status = handle.GetDownloadStatus();
-                        
+
                         progress?.Report(new DownloadProgressStatus
                         {
                             Progress = status.Percent,

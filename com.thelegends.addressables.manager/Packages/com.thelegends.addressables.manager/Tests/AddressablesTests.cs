@@ -13,8 +13,10 @@ using Cysharp.Threading.Tasks;
 using UnityEngine.ResourceManagement.AsyncOperations;
 using TheLegends.Base.Pool;
 
-namespace com.thelegends.addressables.manager.Tests
+namespace TheLegends.Base.Addressables.Tests
 {
+    using Addressables = UnityEngine.AddressableAssets.Addressables;
+
     /// <summary>
     /// Unit and integration test suite for the Addressables Manager package.
     /// Tests loading, caching, reference counting, and pooling features.

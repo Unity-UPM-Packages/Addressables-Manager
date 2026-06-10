@@ -4,8 +4,9 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
+using UnityEngine.Scripting.APIUpdating;
 
-namespace com.thelegends.addressables.manager
+namespace TheLegends.Base.Addressables
 {
     /// <summary>
     /// Configuration settings for the Addressables manager system, containing CDN download retries, delays, and fallback asset mappings.

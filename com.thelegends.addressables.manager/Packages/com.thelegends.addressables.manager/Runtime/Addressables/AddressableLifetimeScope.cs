@@ -6,8 +6,9 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
+using UnityEngine.Scripting.APIUpdating;
 
-namespace com.thelegends.addressables.manager
+namespace TheLegends.Base.Addressables
 {
     /// <summary>
     /// Component that automatically tracks and releases loaded addressable assets bound to a GameObject's lifecycle.

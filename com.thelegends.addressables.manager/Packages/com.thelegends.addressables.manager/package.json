@@ -26,5 +26,12 @@
     "com.cysharp.unitask": "2.5.11",
     "com.thelegends.unity.patterns": "1.0.3",
     "com.unity.addressables": "1.28.2"
-  }
+  },
+  "samples": [
+    {
+      "displayName": "Addressables Demo",
+      "description": "Interactive demo scene showing loading, caching, reference counting, and pooling features.",
+      "path": "Samples~/Demo"
+    }
+  ]
 }

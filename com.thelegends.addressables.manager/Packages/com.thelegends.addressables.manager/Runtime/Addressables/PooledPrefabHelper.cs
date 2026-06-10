@@ -5,9 +5,10 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
+using UnityEngine.Scripting.APIUpdating;
 using TheLegends.Base.Pool;
 
-namespace com.thelegends.addressables.manager
+namespace TheLegends.Base.Addressables
 {
     /// <summary>
     /// Helper adapter class that manages loading a prefab via Addressables and integrating it with the pooling system.
