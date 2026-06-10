@@ -7,10 +7,10 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using Cysharp.Threading.Tasks;
-using com.thelegends.addressables.manager;
+using TheLegends.Base.Addressables;
 using UnityEngine.AddressableAssets;
 
-namespace com.thelegends.addressables.manager.Demo
+namespace TheLegends.Base.Addressables.Demo
 {
     /// <summary>
     /// Interactive runtime controller for testing the Addressables Manager wrapper library.

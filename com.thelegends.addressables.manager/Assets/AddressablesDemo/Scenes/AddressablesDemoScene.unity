@@ -1798,7 +1798,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 69972a04275a96b4b96cb6a461c69362, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: com.thelegends.addressables.manager::com.thelegends.addressables.manager.AddressableService
+  m_EditorClassIdentifier: com.thelegends.addressables.manager::TheLegends.Base.Addressables.AddressableService
 --- !u!1 &980664000
 GameObject:
   m_ObjectHideFlags: 0
@@ -4164,7 +4164,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 06db9e3fa64a7444091e8e1ff7dbf1f8, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::com.thelegends.addressables.manager.Demo.AddressablesManualTester
+  m_EditorClassIdentifier: Assembly-CSharp::TheLegends.Base.Addressables.Demo.AddressablesManualTester
   _fallbackAssetReference:
     m_AssetGUID: 085ebf7bda6df3d4d8aaa7e0611c0ba8
     m_SubObjectName: 

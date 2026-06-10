@@ -11,7 +11,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 43795316d29a2364c9adfb58447cdbbc, type: 3}
   m_Name: AddressableSettings
-  m_EditorClassIdentifier: com.thelegends.addressables.manager::com.thelegends.addressables.manager.AddressableConfig
+  m_EditorClassIdentifier: com.thelegends.addressables.manager::TheLegends.Base.Addressables.AddressableConfig
   _maxRetryCount: 3
   _retryDelaySeconds: 2
   _useFallbackOnFailure: 1

@@ -7,10 +7,12 @@ using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.ResourceManagement.AsyncOperations;
+using UnityEngine.Scripting.APIUpdating;
 using TheLegends.Base.UnitySingleton;
-
-namespace com.thelegends.addressables.manager
+namespace TheLegends.Base.Addressables
 {
+    using Addressables = UnityEngine.AddressableAssets.Addressables;
+
     /// <summary>
     /// Service manager for handling Addressables loading, caching, reference counting, retries, and fallback assets.
     /// </summary>

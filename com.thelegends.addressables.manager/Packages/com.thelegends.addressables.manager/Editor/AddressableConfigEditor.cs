@@ -2,7 +2,9 @@ using System.IO;
 using UnityEditor;
 using UnityEngine;
 
-namespace com.thelegends.addressables.manager.Editor
+using TheLegends.Base.Addressables;
+
+namespace TheLegends.Base.Addressables.Editor
 {
     [CustomEditor(typeof(AddressableConfig))]
     public class AddressableConfigEditor : UnityEditor.Editor
